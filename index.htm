@@ -3,22 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Jardín App</title>
+    <title>Jardín App - Cloud</title>
     
-    <!-- === 1. CAPACIDADES DE WEB APP (PWA) === -->
-    <!-- Dice al navegador que puede funcionar como app independiente -->
+    <!-- === PWA === -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    
-    <!-- Color de la barra de estado del celular (coincide con el header) -->
     <meta name="theme-color" content="#064e3b">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    
-    <!-- Título del icono en el escritorio -->
     <meta name="apple-mobile-web-app-title" content="Mi Jardín">
 
-    <!-- === 2. ICONO GENERADO AUTOMÁTICAMENTE (SVG en Base64) === -->
-    <!-- Esto crea el icono de la plantita sin necesitar archivos externos -->
+    <!-- === ICONO === -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23064e3b%22 rx=%2220%22/><text y=%2250%22 font-size=%2250%22 text-anchor=%22middle%22 x=%2250%22 dy=%22.35em%22>🌿</text></svg>">
     <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23064e3b%22/><text y=%2250%22 font-size=%2250%22 text-anchor=%22middle%22 x=%2250%22 dy=%22.35em%22>🌿</text></svg>">
 
@@ -28,7 +22,7 @@
             -webkit-tap-highlight-color: transparent;
             touch-action: manipulation;
             font-family: system-ui, -apple-system, sans-serif;
-            overscroll-behavior-y: none; /* Evita el rebote elástico en iOS */
+            overscroll-behavior-y: none;
         }
         
         .completed-text {
@@ -36,38 +30,90 @@
             color: #9ca3af;
         }
 
-        /* Soporte para el "Notch" del iPhone */
-        header {
-            padding-top: env(safe-area-inset-top);
+        header { padding-top: env(safe-area-inset-top); }
+        .bottom-safe-area { padding-bottom: env(safe-area-inset-bottom); }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        .bottom-safe-area {
-            padding-bottom: env(safe-area-inset-bottom);
+        .item-enter { animation: fadeIn 0.3s ease-out forwards; }
+        
+        /* Estilos Tabs */
+        .tab-active { border-bottom: 3px solid #bef264; opacity: 1; color: white; }
+        .tab-inactive { border-bottom: 3px solid transparent; opacity: 0.6; color: #a7f3d0; }
+
+        /* Nota estilo libreta */
+        .note-paper {
+            background-color: #fefce8;
+            background-image: linear-gradient(#e7e5e4 1px, transparent 1px);
+            background-size: 100% 1.5rem;
+            line-height: 1.5rem;
         }
     </style>
 </head>
 <body class="bg-stone-100 min-h-screen pb-32 text-stone-800 select-none">
 
     <!-- Header Fijo -->
-    <header class="bg-emerald-900 text-white px-4 pb-4 pt-4 shadow-lg sticky top-0 z-30">
-        <div class="flex justify-between items-end mb-2 pt-2">
-            <div>
-                <h1 class="text-xl font-bold tracking-wide">Jardín & Mantenimiento</h1>
-                <p id="currentDate" class="text-emerald-200 text-sm font-medium mt-1">Cargando...</p>
+    <header class="bg-emerald-900 text-white shadow-lg sticky top-0 z-30 transition-colors duration-300" id="mainHeader">
+        <div class="px-4 pt-4">
+            <div class="flex justify-between items-end mb-2 pt-2">
+                <div>
+                    <h1 class="text-xl font-bold tracking-wide flex items-center gap-2">
+                        Jardín Cloud
+                        <div id="connectionStatus" class="w-2 h-2 rounded-full bg-red-500 animate-pulse" title="Desconectado"></div>
+                    </h1>
+                    <p id="currentDate" class="text-emerald-200 text-sm font-medium mt-1">Conectando...</p>
+                </div>
+                <div class="text-right" id="progressContainer">
+                    <span id="progressText" class="text-2xl font-bold">0%</span>
+                </div>
             </div>
-            <div class="text-right">
-                <span id="progressText" class="text-2xl font-bold">0%</span>
+            
+            <!-- Barra de Progreso (Visible solo en Tareas) -->
+            <div id="progressBarContainer" class="w-full bg-emerald-800 rounded-full h-3 overflow-hidden mb-4">
+                <div id="progressBar" class="bg-lime-400 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
             </div>
-        </div>
-        
-        <!-- Barra de Progreso -->
-        <div class="w-full bg-emerald-800 rounded-full h-3 overflow-hidden">
-            <div id="progressBar" class="bg-lime-400 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+
+            <!-- Tabs de Navegación -->
+            <div class="flex text-sm font-bold uppercase tracking-wider">
+                <button onclick="switchView('tasks')" id="tab-tasks" class="flex-1 pb-3 text-center tab-active transition-all">
+                    Tareas
+                </button>
+                <button onclick="switchView('notes')" id="tab-notes" class="flex-1 pb-3 text-center tab-inactive transition-all">
+                    Notas Libres
+                </button>
+            </div>
         </div>
     </header>
 
-    <!-- Contenedor de Tareas -->
-    <main class="p-4 max-w-lg mx-auto" id="taskListContainer">
-        <!-- JS inyecta aquí -->
+    <!-- Contenedor Principal -->
+    <main class="p-4 max-w-lg mx-auto">
+        
+        <!-- VISTA TAREAS -->
+        <div id="tasksView">
+            <div id="taskListContainer">
+                <!-- Loader -->
+                <div class="text-center mt-10 text-stone-400">
+                    <svg class="animate-spin h-8 w-8 mx-auto mb-2 text-emerald-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <p>Cargando tareas...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA NOTAS -->
+        <div id="notesView" class="hidden">
+            <div id="notesListContainer" class="grid gap-4">
+                <!-- Se inyectan notas aquí -->
+                <div class="text-center mt-10 text-stone-400">
+                    <p>Cargando notas...</p>
+                </div>
+            </div>
+        </div>
+
     </main>
     
     <div class="h-12"></div>
@@ -75,29 +121,30 @@
     <!-- Botonera Flotante Inferior -->
     <div class="fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur border-t border-stone-200 p-3 shadow-[0_-4px_10px_rgba(0,0,0,0.1)] z-40 flex gap-3 justify-center items-center bottom-safe-area">
         
-        <button onclick="resetDay()" class="flex-1 bg-stone-100 active:bg-stone-200 text-stone-700 font-bold py-3 px-4 rounded-xl shadow-sm border border-stone-300 flex items-center justify-center gap-2 transition-transform active:scale-95 text-sm">
+        <!-- Botón Reset (Solo visible en Tareas) -->
+        <button id="resetBtn" onclick="resetDay()" class="flex-1 bg-stone-100 active:bg-stone-200 text-stone-700 font-bold py-3 px-4 rounded-xl shadow-sm border border-stone-300 flex items-center justify-center gap-2 transition-transform active:scale-95 text-sm">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74-2.74L3 12"/></svg>
             Reiniciar Hoy
         </button>
 
-        <button onclick="openModal()" class="bg-emerald-600 active:bg-emerald-700 text-white p-3 rounded-xl shadow-md flex items-center justify-center transition-transform active:scale-95 aspect-square">
+        <!-- Botón + (Universal) -->
+        <button onclick="handleMainAction()" class="bg-emerald-600 active:bg-emerald-700 text-white p-3 rounded-xl shadow-md flex items-center justify-center transition-transform active:scale-95 aspect-square">
             <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
         </button>
     </div>
 
-    <!-- Modal Agregar -->
+    <!-- Modal Agregar Tarea -->
     <div id="addTaskModal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden animate-bounce-in">
             <div class="bg-emerald-800 p-4 text-white flex justify-between items-center">
                 <h2 class="font-bold text-lg">Nueva Tarea</h2>
-                <button onclick="closeModal()" class="text-emerald-200 hover:text-white text-xl px-2">✕</button>
+                <button onclick="closeModal('addTaskModal')" class="text-emerald-200 hover:text-white text-xl px-2">✕</button>
             </div>
             <div class="p-5 space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-stone-600 mb-1">Descripción</label>
-                    <input type="text" id="newTaskInput" placeholder="Ej: Podar..." class="w-full p-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-lg">
+                    <input type="text" id="newTaskInput" placeholder="Ej: Podar rosas..." class="w-full p-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-lg">
                 </div>
-                
                 <div>
                     <label class="block text-sm font-medium text-stone-600 mb-2">Prioridad</label>
                     <div class="grid grid-cols-2 gap-2">
@@ -107,27 +154,57 @@
                         <button onclick="selectPriority('low')" id="btn-low" class="priority-btn p-2 rounded border border-emerald-200 bg-emerald-50 text-emerald-700 text-sm font-bold ring-2 ring-emerald-500">Baja</button>
                     </div>
                 </div>
-
                 <div class="pt-2">
-                    <button onclick="addNewTask()" class="w-full bg-emerald-600 text-white font-bold py-3 rounded-lg shadow active:bg-emerald-700 transform active:scale-95 transition-all">
-                        Guardar
+                    <button id="saveTaskBtn" onclick="addNewTask()" class="w-full bg-emerald-600 text-white font-bold py-3 rounded-lg shadow active:bg-emerald-700 transform active:scale-95 transition-all">
+                        Guardar Tarea
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <script>
-        // CONFIGURACIÓN Y DATOS
-        const DEFAULT_TASKS = [
-            { id: 1703300000001, text: "Riego antes de Navidad", priority: "critical", checkedDay: false, checkedTotal: false },
-            { id: 1703300000002, text: "Ordenar frontal y esconder maquinaria", priority: "high", checkedDay: false, checkedTotal: false },
-            { id: 1703300000003, text: "Reafirmar atadura ejemplares", priority: "medium", checkedDay: false, checkedTotal: false },
-            { id: 1703300000004, text: "Reponer plantas desde fondo", priority: "medium", checkedDay: false, checkedTotal: false },
-            { id: 1703300000005, text: "Ir desarmando micro túnel", priority: "low", checkedDay: false, checkedTotal: false },
-            { id: 1703300000006, text: "Mesa y bancos madera", priority: "low", checkedDay: false, checkedTotal: false }
-        ];
+    <!-- Modal Agregar Nota -->
+    <div id="addNoteModal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden animate-bounce-in">
+            <div class="bg-yellow-100 p-4 text-yellow-800 flex justify-between items-center border-b border-yellow-200">
+                <h2 class="font-bold text-lg">Nueva Nota</h2>
+                <button onclick="closeModal('addNoteModal')" class="text-yellow-700 hover:text-black text-xl px-2">✕</button>
+            </div>
+            <div class="p-4 space-y-4 bg-yellow-50">
+                <div>
+                    <textarea id="newNoteInput" rows="5" placeholder="Escribe aquí..." class="w-full p-3 border border-yellow-200 bg-yellow-50 rounded-lg focus:ring-2 focus:ring-yellow-400 outline-none text-lg text-stone-700 note-paper"></textarea>
+                </div>
+                <div class="pt-2">
+                    <button id="saveNoteBtn" onclick="addNewNote()" class="w-full bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-bold py-3 rounded-lg shadow active:transform active:scale-95 transition-all">
+                        Guardar Nota
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
+    <!-- FIREBASE & LOGIC -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // CONFIGURACIÓN
+        const firebaseConfig = JSON.parse(__firebase_config || '{}');
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-jardin-app';
+        
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // ESTADO
+        let tasksState = [];
+        let notesState = [];
+        let currentView = 'tasks'; // 'tasks' or 'notes'
+        let selectedPriority = 'low';
+        let currentUser = null;
+        
+        const PRIORITY_ORDER = ['critical', 'high', 'medium', 'low'];
         const PRIORITY_STYLES = {
             critical: { color: "border-red-500", bg: "bg-red-50", text: "text-red-700", label: "URGENTE" },
             high: { color: "border-orange-500", bg: "bg-orange-50", text: "text-orange-700", label: "ALTA" },
@@ -135,90 +212,170 @@
             low: { color: "border-emerald-500", bg: "bg-emerald-50", text: "text-emerald-700", label: "BAJA" }
         };
 
-        let appState = [];
-        let selectedPriority = 'low';
-
-        // INICIALIZACIÓN
-        function initApp() {
+        // --- INICIALIZACIÓN ---
+        async function initApp() {
             setTodayDate();
-            loadState();
-            renderTasks();
-            updateProgress();
-        }
-
-        function setTodayDate() {
-            try {
-                const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-                const today = new Date().toLocaleDateString('es-ES', options);
-                document.getElementById('currentDate').textContent = today.charAt(0).toUpperCase() + today.slice(1);
-            } catch (e) {
-                document.getElementById('currentDate').textContent = "Jardín Digital";
-            }
-        }
-
-        function loadState() {
-            const saved = localStorage.getItem('gardenApp_v4'); // Cambié la key a v4 para evitar conflictos
-            if (saved) {
-                appState = JSON.parse(saved);
+            
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
             } else {
-                appState = JSON.parse(JSON.stringify(DEFAULT_TASKS));
-                saveState();
+                await signInAnonymously(auth);
+            }
+
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    currentUser = user;
+                    updateConnectionStatus(true);
+                    subscribeToData();
+                } else {
+                    currentUser = null;
+                    updateConnectionStatus(false);
+                }
+            });
+        }
+
+        function updateConnectionStatus(isConnected) {
+            const statusDot = document.getElementById('connectionStatus');
+            if (isConnected) {
+                statusDot.classList.remove('bg-red-500', 'animate-pulse');
+                statusDot.classList.add('bg-lime-400');
+            } else {
+                statusDot.classList.remove('bg-lime-400');
+                statusDot.classList.add('bg-red-500', 'animate-pulse');
             }
         }
 
-        function saveState() {
-            localStorage.setItem('gardenApp_v4', JSON.stringify(appState));
-            updateProgress();
+        // --- REALTIME DATA ---
+        function subscribeToData() {
+            // 1. Tareas
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'jardin_tasks'), (snapshot) => {
+                const tasks = [];
+                snapshot.forEach((doc) => tasks.push({ id: doc.id, ...doc.data() }));
+                // Ordenar: primero no listas, luego prioridad (simple), luego fecha
+                tasks.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+                tasksState = tasks;
+                if(currentView === 'tasks') renderTasks();
+                updateProgress();
+            });
+
+            // 2. Notas
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'jardin_notes'), (snapshot) => {
+                const notes = [];
+                snapshot.forEach((doc) => notes.push({ id: doc.id, ...doc.data() }));
+                notes.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+                notesState = notes;
+                if(currentView === 'notes') renderNotes();
+            });
         }
 
-        // LÓGICA PRINCIPAL
-        function toggleDay(id) {
-            const task = appState.find(t => t.id === id);
-            if (task) {
-                task.checkedDay = !task.checkedDay;
-                saveState();
-                renderSingleTaskUpdate(task); 
-            }
-        }
+        // --- VISTAS Y NAVEGACIÓN ---
+        window.switchView = function(viewName) {
+            currentView = viewName;
+            
+            // UI Tabs
+            const tabTasks = document.getElementById('tab-tasks');
+            const tabNotes = document.getElementById('tab-notes');
+            const viewTasks = document.getElementById('tasksView');
+            const viewNotes = document.getElementById('notesView');
+            const resetBtn = document.getElementById('resetBtn');
+            const progressContainer = document.getElementById('progressBarContainer');
+            const progressText = document.getElementById('progressContainer');
 
-        function toggleTotal(id) {
-            const task = appState.find(t => t.id === id);
-            if (task) {
-                task.checkedTotal = !task.checkedTotal;
-                if (task.checkedTotal) task.checkedDay = true;
-                saveState();
+            if (viewName === 'tasks') {
+                tabTasks.className = "flex-1 pb-3 text-center tab-active transition-all";
+                tabNotes.className = "flex-1 pb-3 text-center tab-inactive transition-all";
+                viewTasks.classList.remove('hidden');
+                viewNotes.classList.add('hidden');
+                resetBtn.classList.remove('hidden'); // Mostrar btn reset
+                progressContainer.classList.remove('hidden');
+                progressText.style.opacity = '1';
                 renderTasks();
+            } else {
+                tabTasks.className = "flex-1 pb-3 text-center tab-inactive transition-all";
+                tabNotes.className = "flex-1 pb-3 text-center tab-active transition-all";
+                viewTasks.classList.add('hidden');
+                viewNotes.classList.remove('hidden');
+                resetBtn.classList.add('hidden'); // Ocultar btn reset en notas
+                progressContainer.classList.add('hidden');
+                progressText.style.opacity = '0';
+                renderNotes();
             }
         }
 
-        function resetDay() {
-            if(confirm("¿Nueva jornada? Se borrarán los avances verdes de hoy.")){
-                appState.forEach(task => task.checkedDay = false);
-                saveState();
-                renderTasks();
+        window.handleMainAction = function() {
+            if (currentView === 'tasks') {
+                document.getElementById('addTaskModal').classList.remove('hidden');
+                setTimeout(() => document.getElementById('newTaskInput').focus(), 100);
+                selectPriority('low');
+            } else {
+                document.getElementById('addNoteModal').classList.remove('hidden');
+                setTimeout(() => document.getElementById('newNoteInput').focus(), 100);
             }
         }
 
-        function deleteTask(id) {
-            if(confirm("¿Eliminar esta tarea definitivamente?")){
-                appState = appState.filter(t => t.id !== id);
-                saveState();
-                renderTasks();
+        window.closeModal = function(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+            if(modalId === 'addTaskModal') document.getElementById('newTaskInput').value = '';
+            if(modalId === 'addNoteModal') document.getElementById('newNoteInput').value = '';
+        }
+
+        // --- LÓGICA TAREAS ---
+        window.addNewTask = async function() {
+            const input = document.getElementById('newTaskInput');
+            const btn = document.getElementById('saveTaskBtn');
+            const text = input.value.trim();
+            if (!text) return;
+
+            btn.disabled = true;
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'jardin_tasks'), {
+                    text: text,
+                    priority: selectedPriority,
+                    checkedDay: false,
+                    checkedTotal: false,
+                    createdAt: serverTimestamp()
+                });
+                closeModal('addTaskModal');
+            } catch (e) { console.error(e); }
+            btn.disabled = false;
+        }
+
+        window.toggleDay = async function(id) {
+            const task = tasksState.find(t => t.id === id);
+            if(!task) return;
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'jardin_tasks', id), {
+                checkedDay: !task.checkedDay
+            });
+        }
+
+        window.toggleTotal = async function(id) {
+            const task = tasksState.find(t => t.id === id);
+            if(!task) return;
+            const newVal = !task.checkedTotal;
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'jardin_tasks', id), {
+                checkedTotal: newVal,
+                checkedDay: newVal ? true : task.checkedDay
+            });
+        }
+
+        window.deleteTask = async function(id) {
+            if(confirm("¿Eliminar tarea?")) {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'jardin_tasks', id));
             }
         }
 
-        function openModal() {
-            document.getElementById('addTaskModal').classList.remove('hidden');
-            setTimeout(() => document.getElementById('newTaskInput').focus(), 100);
-            selectPriority('low');
+        window.resetDay = async function() {
+            if(!confirm("¿Iniciar nuevo día?")) return;
+            const batch = [];
+            tasksState.forEach(t => {
+                if(t.checkedDay && !t.checkedTotal) {
+                    batch.push(updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'jardin_tasks', t.id), { checkedDay: false }));
+                }
+            });
+            await Promise.all(batch);
         }
 
-        function closeModal() {
-            document.getElementById('addTaskModal').classList.add('hidden');
-            document.getElementById('newTaskInput').value = '';
-        }
-
-        function selectPriority(prio) {
+        window.selectPriority = function(prio) {
             selectedPriority = prio;
             document.querySelectorAll('.priority-btn').forEach(btn => {
                 btn.classList.remove('ring-2', 'ring-emerald-500', 'ring-offset-1');
@@ -229,93 +386,93 @@
             activeBtn.style.opacity = '1';
         }
 
-        function addNewTask() {
-            const input = document.getElementById('newTaskInput');
-            const text = input.value.trim();
-            if (!text) return alert("Escribe un nombre para la tarea");
-
-            const newTask = {
-                id: Date.now(),
-                text: text,
-                priority: selectedPriority,
-                checkedDay: false,
-                checkedTotal: false
-            };
-
-            appState.unshift(newTask);
-            saveState();
-            renderTasks();
-            closeModal();
-        }
-
-        function updateProgress() {
-            if (appState.length === 0) {
-                document.getElementById('progressBar').style.width = `0%`;
-                document.getElementById('progressText').textContent = `0%`;
-                return;
+        // --- NUEVA LÓGICA: CAMBIAR PRIORIDAD ---
+        window.cyclePriority = async function(id, currentPrio) {
+            // Encontrar el indice actual y moverse al siguiente
+            const idx = PRIORITY_ORDER.indexOf(currentPrio);
+            const nextIdx = (idx + 1) % PRIORITY_ORDER.length;
+            const nextPrio = PRIORITY_ORDER[nextIdx];
+            
+            // Update optimista visual (opcional, pero Firestore es rápido)
+            try {
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'jardin_tasks', id), {
+                    priority: nextPrio
+                });
+            } catch(e) {
+                console.error("Error cambiando prioridad", e);
             }
-            const completed = appState.filter(t => t.checkedTotal).length;
-            const percentage = Math.round((completed / appState.length) * 100);
-            document.getElementById('progressBar').style.width = `${percentage}%`;
-            document.getElementById('progressText').textContent = `${percentage}%`;
         }
 
-        // RENDERIZADO
+        // --- LÓGICA NOTAS ---
+        window.addNewNote = async function() {
+            const input = document.getElementById('newNoteInput');
+            const btn = document.getElementById('saveNoteBtn');
+            const text = input.value.trim();
+            if (!text) return;
+
+            btn.disabled = true;
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'jardin_notes'), {
+                    content: text,
+                    createdAt: serverTimestamp()
+                });
+                closeModal('addNoteModal');
+            } catch (e) { console.error(e); }
+            btn.disabled = false;
+        }
+
+        window.deleteNote = async function(id) {
+            if(confirm("¿Borrar nota?")) {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'jardin_notes', id));
+            }
+        }
+
+        // --- RENDERS ---
         function renderTasks() {
             const container = document.getElementById('taskListContainer');
             container.innerHTML = '';
-
-            if (appState.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center p-8 text-stone-400">
-                        <p class="text-4xl mb-4">🌿</p>
-                        <p>No hay tareas pendientes.</p>
-                        <p class="text-sm">Usa el botón + para agregar.</p>
-                    </div>`;
+            
+            if (tasksState.length === 0) {
+                container.innerHTML = `<div class="text-center p-8 text-stone-400"><p class="text-4xl mb-4">🌿</p><p>Sin tareas</p></div>`;
                 return;
             }
 
-            appState.forEach(task => {
+            tasksState.forEach(task => {
                 const styles = PRIORITY_STYLES[task.priority] || PRIORITY_STYLES['low'];
                 const isTotalDone = task.checkedTotal;
                 const isDayDone = task.checkedDay;
+                const idStr = `'${task.id}'`;
+                const prioStr = `'${task.priority}'`;
 
+                // Aquí convertimos el badge de prioridad en un botón interactivo
                 const card = document.createElement('div');
-                card.id = `task-${task.id}`;
-                card.className = `bg-white rounded-xl shadow-sm mb-4 overflow-hidden border-l-8 ${styles.color} flex flex-col relative group`;
+                card.className = `item-enter bg-white rounded-xl shadow-sm mb-4 overflow-hidden border-l-8 ${styles.color} flex flex-col relative transition-all duration-300 ${isTotalDone ? 'opacity-70 grayscale-[0.5]' : ''}`;
                 
                 card.innerHTML = `
                     <div class="p-4 flex-grow pr-10">
                         <div class="flex justify-between items-start mb-1">
-                            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-stone-100 ${styles.text} uppercase tracking-wider">
+                            <button onclick="cyclePriority(${idStr}, ${prioStr})" class="text-[10px] font-bold px-2 py-1 rounded bg-stone-100 ${styles.text} uppercase tracking-wider border border-transparent hover:border-stone-300 active:scale-95 transition-all flex items-center gap-1">
                                 ${styles.label}
-                            </span>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                            </button>
                         </div>
-                        <h3 class="text-lg font-medium leading-tight ${isTotalDone ? 'completed-text' : 'text-stone-800'}">
+                        <h3 class="text-lg font-medium leading-tight mt-1 ${isTotalDone ? 'completed-text' : 'text-stone-800'}">
                             ${task.text}
                         </h3>
                     </div>
-
-                    <button onclick="deleteTask(${task.id})" class="absolute top-2 right-2 p-2 text-stone-300 hover:text-red-500 active:text-red-500 transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                    <button onclick="deleteTask(${idStr})" class="absolute top-2 right-2 p-2 text-stone-300 hover:text-red-500 z-10">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
                     </button>
-
                     <div class="grid grid-cols-2 border-t border-stone-100 divide-x divide-stone-100 h-14">
-                        <button onclick="toggleDay(${task.id})" 
-                            id="btn-day-${task.id}"
-                            class="flex flex-col items-center justify-center active:bg-stone-100 transition-colors ${isDayDone ? 'bg-emerald-50' : 'bg-white'}">
-                            <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center mb-0.5
-                                ${isDayDone ? 'border-emerald-500 bg-emerald-500' : 'border-stone-300'}">
-                                ${isDayDone ? '<svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>' : ''}
+                        <button onclick="toggleDay(${idStr})" class="flex flex-col items-center justify-center active:bg-stone-100 ${isDayDone ? 'bg-emerald-50' : 'bg-white'}">
+                             <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center mb-0.5 ${isDayDone ? 'border-emerald-500 bg-emerald-500' : 'border-stone-300'}">
+                                ${isDayDone ? '<svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"></path></svg>' : ''}
                             </div>
                             <span class="text-[10px] font-bold ${isDayDone ? 'text-emerald-700' : 'text-stone-400'}">HOY</span>
                         </button>
-
-                        <button onclick="toggleTotal(${task.id})" 
-                            class="flex flex-col items-center justify-center active:bg-stone-100 transition-colors ${isTotalDone ? 'bg-stone-800' : 'bg-white'}">
-                            <div class="w-5 h-5 rounded border-2 flex items-center justify-center mb-0.5
-                                ${isTotalDone ? 'border-stone-600 bg-stone-600' : 'border-stone-300'}">
-                                ${isTotalDone ? '<svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>' : ''}
+                        <button onclick="toggleTotal(${idStr})" class="flex flex-col items-center justify-center active:bg-stone-100 ${isTotalDone ? 'bg-stone-800' : 'bg-white'}">
+                            <div class="w-5 h-5 rounded border-2 flex items-center justify-center mb-0.5 ${isTotalDone ? 'border-stone-600 bg-stone-600' : 'border-stone-300'}">
+                                ${isTotalDone ? '<svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"></path></svg>' : ''}
                             </div>
                             <span class="text-[10px] font-bold ${isTotalDone ? 'text-white' : 'text-stone-400'}">LISTO</span>
                         </button>
@@ -324,20 +481,58 @@
                 container.appendChild(card);
             });
         }
-        function renderSingleTaskUpdate(task) {
-           const btnDay = document.getElementById(`btn-day-${task.id}`);
-           if(btnDay) {
-               const isDayDone = task.checkedDay;
-               btnDay.className = `flex flex-col items-center justify-center active:bg-stone-100 transition-colors ${isDayDone ? 'bg-emerald-50' : 'bg-white'}`;
-               btnDay.innerHTML = `
-                    <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center mb-0.5
-                        ${isDayDone ? 'border-emerald-500 bg-emerald-500' : 'border-stone-300'}">
-                        ${isDayDone ? '<svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>' : ''}
+
+        function renderNotes() {
+            const container = document.getElementById('notesListContainer');
+            container.innerHTML = '';
+
+            if (notesState.length === 0) {
+                container.innerHTML = `<div class="text-center p-8 text-stone-400"><p class="text-4xl mb-4">📝</p><p>Sin anotaciones</p></div>`;
+                return;
+            }
+
+            notesState.forEach(note => {
+                const idStr = `'${note.id}'`;
+                // Parseo de fecha simple
+                let dateStr = "";
+                if (note.createdAt) {
+                    dateStr = new Date(note.createdAt.seconds * 1000).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+                }
+
+                const card = document.createElement('div');
+                card.className = `item-enter bg-yellow-50 rounded-xl shadow-sm border border-yellow-200 p-4 relative`;
+                card.innerHTML = `
+                    <div class="text-stone-800 whitespace-pre-wrap leading-relaxed mb-4 font-handwriting note-paper">${note.content}</div>
+                    <div class="flex justify-between items-end border-t border-yellow-200 pt-2">
+                        <span class="text-xs text-yellow-700 font-medium">${dateStr}</span>
+                        <button onclick="deleteNote(${idStr})" class="text-yellow-600 hover:text-red-500 p-1">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        </button>
                     </div>
-                    <span class="text-[10px] font-bold ${isDayDone ? 'text-emerald-700' : 'text-stone-400'}">HOY</span>
-               `;
-           }
+                `;
+                container.appendChild(card);
+            });
         }
+
+        function updateProgress() {
+            if (tasksState.length === 0) {
+                document.getElementById('progressBar').style.width = `0%`;
+                document.getElementById('progressText').textContent = `0%`;
+                return;
+            }
+            const completed = tasksState.filter(t => t.checkedTotal).length;
+            const percentage = Math.round((completed / tasksState.length) * 100);
+            document.getElementById('progressBar').style.width = `${percentage}%`;
+            document.getElementById('progressText').textContent = `${percentage}%`;
+        }
+
+        function setTodayDate() {
+            try {
+                const today = new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+                document.getElementById('currentDate').textContent = today.charAt(0).toUpperCase() + today.slice(1);
+            } catch (e) {}
+        }
+
         initApp();
     </script>
 </body>
