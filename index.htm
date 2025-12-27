@@ -3,201 +3,206 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Jardín App - Cloud</title>
-    
-    <!-- === PWA === -->
+    <title>Jardín OS v5.6</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#064e3b">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Mi Jardín">
-
-    <!-- === ICONO === -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23064e3b%22 rx=%2220%22/><text y=%2250%22 font-size=%2250%22 text-anchor=%22middle%22 x=%2250%22 dy=%22.35em%22>🌿</text></svg>">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23064e3b%22/><text y=%2250%22 font-size=%2250%22 text-anchor=%22middle%22 x=%2250%22 dy=%22.35em%22>🌿</text></svg>">
-
+    
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body {
-            -webkit-tap-highlight-color: transparent;
-            touch-action: manipulation;
-            font-family: system-ui, -apple-system, sans-serif;
-            overscroll-behavior-y: none;
-        }
-        
-        .completed-text {
-            text-decoration: line-through;
-            color: #9ca3af;
-        }
-
+        body { -webkit-tap-highlight-color: transparent; touch-action: manipulation; font-family: system-ui, sans-serif; overscroll-behavior-y: none; }
+        .completed-text { text-decoration: line-through; color: #9ca3af; }
         header { padding-top: env(safe-area-inset-top); }
         .bottom-safe-area { padding-bottom: env(safe-area-inset-bottom); }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .item-enter { animation: fadeIn 0.3s ease-out forwards; }
         
-        /* Estilos Tabs */
+        /* Temas Dinámicos */
+        .theme-centro { --primary: #064e3b; --accent: #059669; --bg-btn: #064e3b; --light: #d1fae5; } 
+        .theme-ejemplares { --primary: #312e81; --accent: #4338ca; --bg-btn: #312e81; --light: #e0e7ff; } 
+        
         .tab-active { border-bottom: 3px solid #bef264; opacity: 1; color: white; }
-        .tab-inactive { border-bottom: 3px solid transparent; opacity: 0.6; color: #a7f3d0; }
-
-        /* Nota estilo libreta */
-        .note-paper {
-            background-color: #fefce8;
-            background-image: linear-gradient(#e7e5e4 1px, transparent 1px);
-            background-size: 100% 1.5rem;
-            line-height: 1.5rem;
-        }
+        .tab-inactive { border-bottom: 3px solid transparent; opacity: 0.6; color: #e5e7eb; }
+        
+        /* Chat & Audio */
+        .msg-bubble { max-width: 85%; border-radius: 12px; padding: 10px; margin-bottom: 8px; position: relative; word-wrap: break-word; }
+        .msg-me { background-color: #dcf8c6; margin-left: auto; color: #1f2937; }
+        .msg-other { background-color: white; margin-right: auto; color: #1f2937; border: 1px solid #e5e7eb; }
+        .mic-active { animation: pulse-red 1.5s infinite; background-color: #ef4444 !important; transform: scale(1.1); }
+        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+        
+        .cyclic-badge { font-size: 0.6rem; background: #78716c; color: white; padding: 2px 6px; border-radius: 99px; display: inline-flex; align-items: center; gap: 2px; }
+        
+        /* Estilos Notas */
+        .note-internal { background-color: #fefce8; border-color: #fef08a; } /* Amarillo */
+        .note-billing { background-color: #ffedd5; border-color: #fdba74; } /* Naranja/Salmón */
+        .badge-billing { background-color: #ea580c; color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; display: inline-block; margin-bottom: 4px; }
     </style>
 </head>
-<body class="bg-stone-100 min-h-screen pb-32 text-stone-800 select-none">
+<body id="appBody" class="bg-stone-100 min-h-screen pb-40 text-stone-800 select-none flex flex-col theme-centro transition-colors duration-500">
 
-    <!-- PANTALLA DE ERROR DE CONFIGURACIÓN (Oculta por defecto) -->
-    <div id="configErrorScreen" class="hidden fixed inset-0 z-[100] bg-stone-900 text-white p-8 flex flex-col items-center justify-center text-center">
-        <div class="text-6xl mb-4">⚠️</div>
-        <h2 class="text-2xl font-bold text-red-400 mb-4">Falta Configuración</h2>
-        <p class="mb-6 text-stone-300">Para usar esta app en GitHub/Hosting externo, necesitas conectar tu propia base de datos Firebase.</p>
-        <div class="bg-stone-800 p-4 rounded text-left text-xs font-mono text-green-400 w-full max-w-md overflow-x-auto">
-            1. Crea proyecto en console.firebase.google.com<br>
-            2. Activa Firestore Database y Authentication (Anónimo)<br>
-            3. Copia la config del proyecto<br>
-            4. Edita este archivo HTML y busca "CONFIGURACIÓN_FIREBASE"<br>
-            5. Pega tus datos ahí.
-        </div>
-        <button onclick="location.reload()" class="mt-8 bg-stone-700 hover:bg-stone-600 px-6 py-3 rounded-lg">Recargar después de editar</button>
-    </div>
-
-    <!-- Header Fijo -->
-    <header class="bg-emerald-900 text-white shadow-lg sticky top-0 z-30 transition-colors duration-300" id="mainHeader">
-        <div class="px-4 pt-4">
-            <div class="flex justify-between items-end mb-2 pt-2">
+    <!-- Header -->
+    <header id="mainHeader" class="shadow-lg sticky top-0 z-30 transition-colors duration-500" style="background-color: var(--primary);">
+        <div class="px-4 pt-4 text-white">
+            <div class="flex justify-between items-start mb-2 pt-2">
                 <div>
-                    <h1 class="text-xl font-bold tracking-wide flex items-center gap-2">
-                        Jardín Cloud
-                        <div id="connectionStatus" class="w-2 h-2 rounded-full bg-red-500 animate-pulse" title="Desconectado"></div>
-                    </h1>
-                    <p id="currentDate" class="text-emerald-200 text-sm font-medium mt-1">Conectando...</p>
+                    <button onclick="toggleBranch()" class="flex items-center gap-2 font-bold text-lg hover:opacity-80 transition-opacity">
+                        <i class="fas fa-store-alt"></i>
+                        <span id="branchName">Centro Tao</span>
+                        <i class="fas fa-chevron-down text-xs opacity-50"></i>
+                    </button>
+                    <div class="flex items-center gap-2 mt-1">
+                         <span id="currentDate" class="text-xs opacity-80">...</span>
+                         <div id="connectionStatus" class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+                         <span id="offlineIndicator" class="text-[10px] bg-yellow-500 text-black px-1 rounded hidden">OFFLINE</span>
+                    </div>
                 </div>
-                <div class="text-right" id="progressContainer">
-                    <span id="progressText" class="text-2xl font-bold">0%</span>
-                </div>
+                <button id="wakeLockBtn" onclick="toggleWakeLock()" class="text-xs border border-white/30 rounded px-2 py-1 opacity-70 hover:opacity-100 hover:bg-white/10">
+                    <i class="fas fa-power-off"></i> Pantalla On
+                </button>
             </div>
             
-            <!-- Barra de Progreso -->
-            <div id="progressBarContainer" class="w-full bg-emerald-800 rounded-full h-3 overflow-hidden mb-4">
-                <div id="progressBar" class="bg-lime-400 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
-            </div>
-
-            <!-- Tabs -->
-            <div class="flex text-sm font-bold uppercase tracking-wider">
-                <button onclick="switchView('tasks')" id="tab-tasks" class="flex-1 pb-3 text-center tab-active transition-all">
-                    Tareas
-                </button>
-                <button onclick="switchView('notes')" id="tab-notes" class="flex-1 pb-3 text-center tab-inactive transition-all">
-                    Notas Libres
-                </button>
+            <div class="flex text-xs font-bold uppercase tracking-wider mt-4 overflow-x-auto">
+                <button onclick="switchView('tasks')" id="tab-tasks" class="flex-1 pb-3 text-center tab-active min-w-[60px]">Tareas</button>
+                <button onclick="switchView('delivery')" id="tab-delivery" class="flex-1 pb-3 text-center tab-inactive min-w-[60px]">Repartos</button>
+                <button onclick="switchView('notes')" id="tab-notes" class="flex-1 pb-3 text-center tab-inactive min-w-[60px]">Notas</button>
+                <button onclick="switchView('stock')" id="tab-stock" class="flex-1 pb-3 text-center tab-inactive min-w-[60px]">Stock</button>
+                <button onclick="switchView('chat')" id="tab-chat" class="flex-1 pb-3 text-center tab-inactive min-w-[60px]"><i class="fas fa-broadcast-tower"></i> Radio</button>
             </div>
         </div>
     </header>
 
-    <!-- Contenedor Principal -->
-    <main class="p-4 max-w-lg mx-auto">
+    <!-- Main Content -->
+    <main class="flex-grow p-4 max-w-lg mx-auto w-full relative">
         
         <!-- VISTA TAREAS -->
-        <div id="tasksView">
-            <div id="taskListContainer">
-                <div class="text-center mt-10 text-stone-400">
-                    <svg class="animate-spin h-8 w-8 mx-auto mb-2 text-emerald-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <p>Cargando tareas...</p>
-                </div>
-            </div>
+        <div id="tasksView" class="view-section">
+            <div id="taskListContainer" class="pb-20 space-y-3"></div>
+        </div>
+
+        <!-- VISTA REPARTOS -->
+        <div id="deliveryView" class="view-section hidden">
+            <div id="deliveryListContainer" class="pb-20 space-y-4"></div>
         </div>
 
         <!-- VISTA NOTAS -->
-        <div id="notesView" class="hidden">
-            <div id="notesListContainer" class="grid gap-4">
-                <div class="text-center mt-10 text-stone-400">
-                    <p>Cargando notas...</p>
+        <div id="notesView" class="view-section hidden">
+            <div id="notesListContainer" class="grid gap-4 pb-20"></div>
+        </div>
+        
+        <!-- VISTA STOCK -->
+        <div id="stockView" class="view-section hidden text-center pt-20">
+            <i class="fas fa-boxes text-6xl text-stone-300 mb-4"></i>
+            <h2 class="text-xl font-bold text-stone-600">Base de Stock</h2>
+            <p class="text-stone-400 text-sm mt-2">Pronto: Conexión a inventario local.</p>
+        </div>
+
+        <!-- VISTA CHAT / RADIO -->
+        <div id="chatView" class="view-section hidden h-full flex flex-col">
+            <div id="chatContainer" class="flex-grow overflow-y-auto pb-28 space-y-2 flex flex-col p-2"></div>
+            <div class="fixed bottom-24 left-0 w-full px-4 max-w-lg mx-auto left-0 right-0 z-50">
+                <div class="bg-white rounded-full shadow-2xl border border-stone-200 p-2 flex items-center gap-2">
+                    <label class="p-3 text-stone-500 hover:text-emerald-600 cursor-pointer">
+                        <i class="fas fa-camera text-xl"></i>
+                        <input type="file" id="imageInput" accept="image/*" class="hidden" onchange="uploadImage()">
+                    </label>
+                    <input type="text" id="chatInput" placeholder="Mensaje..." class="flex-grow bg-transparent outline-none text-sm px-2">
+                    <button onclick="sendTextMessage()" class="text-stone-600 p-2 font-bold text-sm"><i class="fas fa-paper-plane"></i></button>
+                    <button id="micBtn" 
+                        onmousedown="startRecording()" onmouseup="stopRecording()" 
+                        ontouchstart="startRecording(event)" ontouchend="stopRecording(event)"
+                        class="text-white rounded-full w-12 h-12 flex items-center justify-center shadow-md active:scale-95 transition-all"
+                        style="background-color: var(--accent);">
+                        <i class="fas fa-microphone text-lg"></i>
+                    </button>
+                </div>
+                <div id="recordingStatus" class="text-center text-xs font-bold text-red-500 mt-2 h-4 opacity-0 transition-opacity bg-white/80 rounded px-2 inline-block mx-auto w-full">
+                    TRANSMITIENDO...
                 </div>
             </div>
         </div>
     </main>
-    
-    <div class="h-12"></div>
 
-    <!-- Botonera -->
-    <div class="fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur border-t border-stone-200 p-3 shadow-[0_-4px_10px_rgba(0,0,0,0.1)] z-40 flex gap-3 justify-center items-center bottom-safe-area">
-        <button id="resetBtn" onclick="resetDay()" class="flex-1 bg-stone-100 active:bg-stone-200 text-stone-700 font-bold py-3 px-4 rounded-xl shadow-sm border border-stone-300 flex items-center justify-center gap-2 transition-transform active:scale-95 text-sm">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74-2.74L3 12"/></svg>
-            Reiniciar Hoy
-        </button>
-        <button onclick="handleMainAction()" class="bg-emerald-600 active:bg-emerald-700 text-white p-3 rounded-xl shadow-md flex items-center justify-center transition-transform active:scale-95 aspect-square">
-            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    <!-- Botonera Inferior -->
+    <div id="mainControls" class="fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur border-t border-stone-200 p-3 shadow-lg z-40 flex gap-3 justify-center bottom-safe-area">
+        <button onclick="handleMainAction()" class="text-white p-3 rounded-xl shadow-md flex-1 font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform" style="background-color: var(--accent);">
+            <i class="fas fa-plus"></i> <span id="mainBtnText">Nuevo</span>
         </button>
     </div>
 
-    <!-- Modales -->
+    <!-- Modal Tarea -->
     <div id="addTaskModal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden animate-bounce-in">
-            <div class="bg-emerald-800 p-4 text-white flex justify-between items-center">
-                <h2 class="font-bold text-lg">Nueva Tarea</h2>
-                <button onclick="closeModal('addTaskModal')" class="text-emerald-200 hover:text-white text-xl px-2">✕</button>
+        <div class="bg-white w-full max-w-sm rounded-2xl shadow-xl overflow-hidden p-5 space-y-4">
+            <h2 class="font-bold text-lg" style="color: var(--primary);">Nueva Tarea / Ciclo</h2>
+            <input type="text" id="newTaskInput" class="w-full p-2 border-b-2 border-stone-200 outline-none focus:border-emerald-500" placeholder="Descripción...">
+            <input type="text" id="newTaskAssignee" class="w-full p-2 border-b-2 border-stone-200 outline-none focus:border-emerald-500" placeholder="Responsable (Opcional)">
+            <div class="flex items-center justify-between bg-stone-50 p-3 rounded-lg">
+                <span class="text-sm font-medium text-stone-700">¿Es Cíclica/Fija?</span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="newTaskCyclic" class="sr-only peer">
+                    <div class="w-11 h-6 bg-stone-200 peer-focus:outline-none rounded-full peer peer-checked:bg-emerald-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                </label>
             </div>
-            <div class="p-5 space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-stone-600 mb-1">Descripción</label>
-                    <input type="text" id="newTaskInput" placeholder="Ej: Podar rosas..." class="w-full p-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-lg">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-stone-600 mb-2">Prioridad</label>
-                    <div class="grid grid-cols-2 gap-2">
-                        <button onclick="selectPriority('critical')" id="btn-critical" class="priority-btn p-2 rounded border border-red-200 bg-red-50 text-red-700 text-sm font-bold">Urgente</button>
-                        <button onclick="selectPriority('high')" id="btn-high" class="priority-btn p-2 rounded border border-orange-200 bg-orange-50 text-orange-700 text-sm font-bold">Alta</button>
-                        <button onclick="selectPriority('medium')" id="btn-medium" class="priority-btn p-2 rounded border border-blue-200 bg-blue-50 text-blue-700 text-sm font-bold">Media</button>
-                        <button onclick="selectPriority('low')" id="btn-low" class="priority-btn p-2 rounded border border-emerald-200 bg-emerald-50 text-emerald-700 text-sm font-bold ring-2 ring-emerald-500">Baja</button>
-                    </div>
-                </div>
-                <div class="pt-2">
-                    <button id="saveTaskBtn" onclick="addNewTask()" class="w-full bg-emerald-600 text-white font-bold py-3 rounded-lg shadow active:bg-emerald-700 transform active:scale-95 transition-all">
-                        Guardar Tarea
-                    </button>
-                </div>
+            <div class="grid grid-cols-4 gap-2 text-xs font-bold">
+                <button onclick="selectPriority('critical')" class="p-2 bg-red-100 text-red-700 rounded prio-btn" id="btn-critical">URG</button>
+                <button onclick="selectPriority('high')" class="p-2 bg-orange-100 text-orange-700 rounded prio-btn" id="btn-high">ALT</button>
+                <button onclick="selectPriority('medium')" class="p-2 bg-blue-100 text-blue-700 rounded prio-btn" id="btn-medium">MED</button>
+                <button onclick="selectPriority('low')" class="p-2 bg-emerald-100 text-emerald-700 rounded prio-btn ring-2 ring-emerald-500" id="btn-low">BAJ</button>
+            </div>
+            <div class="flex gap-3 pt-2">
+                <button onclick="closeModal('addTaskModal')" class="flex-1 py-3 text-stone-500 bg-stone-100 rounded-lg font-bold">Cancelar</button>
+                <button onclick="addNewTask()" class="flex-1 py-3 text-white rounded-lg shadow font-bold" style="background-color: var(--primary);">Guardar</button>
             </div>
         </div>
     </div>
 
+    <!-- Modal Reparto -->
+    <div id="addDeliveryModal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-sm rounded-2xl shadow-xl overflow-hidden p-5 space-y-3">
+            <h2 class="font-bold text-lg" style="color: var(--primary);">Nuevo Reparto</h2>
+            <input type="text" id="delClient" class="w-full p-2 border-b outline-none" placeholder="Nombre Cliente">
+            <input type="tel" id="delPhone" class="w-full p-2 border-b outline-none" placeholder="Teléfono">
+            <textarea id="delItems" class="w-full p-2 border-b outline-none h-20 resize-none" placeholder="¿Qué lleva el pedido?"></textarea>
+            <div class="grid grid-cols-2 gap-2">
+                <input type="text" id="delWhen" class="p-2 border-b outline-none text-sm" placeholder="¿Para Cuándo?">
+                <input type="text" id="delWhere" class="p-2 border-b outline-none text-sm" placeholder="Dirección / Zona">
+            </div>
+            <div class="flex gap-3 pt-4">
+                <button onclick="closeModal('addDeliveryModal')" class="flex-1 py-3 text-stone-500 bg-stone-100 rounded-lg font-bold">Cancelar</button>
+                <button onclick="addNewDelivery()" class="flex-1 py-3 text-white rounded-lg shadow font-bold" style="background-color: var(--primary);">Agendar</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Nota (ACTUALIZADO CON TIPO) -->
     <div id="addNoteModal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden animate-bounce-in">
-            <div class="bg-yellow-100 p-4 text-yellow-800 flex justify-between items-center border-b border-yellow-200">
-                <h2 class="font-bold text-lg">Nueva Nota</h2>
-                <button onclick="closeModal('addNoteModal')" class="text-yellow-700 hover:text-black text-xl px-2">✕</button>
-            </div>
-            <div class="p-4 space-y-4 bg-yellow-50">
-                <textarea id="newNoteInput" rows="5" placeholder="Escribe aquí..." class="w-full p-3 border border-yellow-200 bg-yellow-50 rounded-lg focus:ring-2 focus:ring-yellow-400 outline-none text-lg text-stone-700 note-paper"></textarea>
-                <div class="pt-2">
-                    <button id="saveNoteBtn" onclick="addNewNote()" class="w-full bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-bold py-3 rounded-lg shadow active:transform active:scale-95 transition-all">
-                        Guardar Nota
-                    </button>
-                </div>
-            </div>
+        <div class="bg-white w-full max-w-sm rounded-2xl shadow-xl p-4 bg-yellow-50 border border-yellow-200">
+             <h2 class="font-bold text-lg text-yellow-800 mb-2">Nueva Nota</h2>
+             
+             <!-- Selector de Tipo -->
+             <div class="mb-3">
+                 <label class="text-xs font-bold text-yellow-800 uppercase block mb-1">Tipo de Nota</label>
+                 <select id="newNoteType" class="w-full p-2 rounded bg-yellow-100 border border-yellow-300 text-yellow-900 text-sm outline-none">
+                     <option value="internal">📌 Comunicación Interna</option>
+                     <option value="billing">💰 Cola de Cobro</option>
+                 </select>
+             </div>
+
+             <textarea id="newNoteInput" rows="5" class="w-full bg-transparent outline-none text-stone-700" placeholder="Escribir detalles..."></textarea>
+             
+             <div class="flex justify-end gap-2 mt-4">
+                 <button onclick="closeModal('addNoteModal')" class="text-stone-400 px-4 py-2">Cancelar</button>
+                 <button onclick="addNewNote()" class="bg-yellow-400 text-yellow-900 px-6 py-2 rounded-lg font-bold shadow">Pegar</button>
+             </div>
         </div>
     </div>
 
-    <!-- FIREBASE & LOGIC -->
+    <!-- Lógica y Firebase -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp, query, orderBy, limit, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
-        // ==========================================
-        //  CONFIGURACIÓN_FIREBASE (YA INTEGRADA)
-        // ==========================================
-        
+        // === CONFIGURACIÓN ===
         const manualConfig = {
             apiKey: "AIzaSyBzPiBCgiHoHSp24U7739fj9-htyTA8KiU",
             authDomain: "app-jardin-v4.firebaseapp.com",
@@ -207,336 +212,163 @@
             appId: "1:413324369604:web:f78e3f459725dd824e3391"
         };
 
-        // ==========================================
-        //  LÓGICA DE INICIALIZACIÓN ROBUSTA
-        // ==========================================
-        let firebaseConfig;
-        let appId = 'jardin-app-v2';
-
-        try {
-            // Intenta obtener la config del entorno Canvas (para el editor)
-            if (typeof __firebase_config !== 'undefined') {
-                firebaseConfig = JSON.parse(__firebase_config);
-                appId = typeof __app_id !== 'undefined' ? __app_id : appId;
-            } else {
-                // Si no estamos en Canvas (GitHub/Local), usa la manual
-                firebaseConfig = manualConfig;
-            }
-        } catch (e) {
-            firebaseConfig = manualConfig;
-        }
-
-        // VALIDACIÓN DE CONFIGURACIÓN
-        if (!firebaseConfig || !firebaseConfig.apiKey) {
-            document.getElementById('configErrorScreen').classList.remove('hidden');
-            throw new Error("Falta configuración de Firebase. Por favor edita el archivo HTML.");
-        }
-
-        const app = initializeApp(firebaseConfig);
+        const app = initializeApp(manualConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        const storage = getStorage(app);
+        const APP_ID = 'jardin-os-v5'; // Mantenemos v5 para compatibilidad de datos
 
-        // ESTADO
-        let tasksState = [];
-        let notesState = [];
-        let currentView = 'tasks'; 
-        let selectedPriority = 'low';
+        enableIndexedDbPersistence(db).catch((err) => console.log("Persistencia no disponible:", err.code));
+
+        let currentBranch = localStorage.getItem('tao_branch') || 'centro';
+        let currentView = 'tasks';
         let currentUser = null;
+        let selectedPriority = 'low';
+        let wakeLock = null;
         
-        const PRIORITY_ORDER = ['critical', 'high', 'medium', 'low'];
-        const PRIORITY_STYLES = {
-            critical: { color: "border-red-500", bg: "bg-red-50", text: "text-red-700", label: "URGENTE" },
-            high: { color: "border-orange-500", bg: "bg-orange-50", text: "text-orange-700", label: "ALTA" },
-            medium: { color: "border-blue-500", bg: "bg-blue-50", text: "text-blue-700", label: "MEDIA" },
-            low: { color: "border-emerald-500", bg: "bg-emerald-50", text: "text-emerald-700", label: "BAJA" }
-        };
+        let unsubTasks, unsubDeliveries, unsubNotes, unsubChat;
+        let mediaRecorder, audioChunks = [], isRecording = false;
 
         async function initApp() {
+            applyBranchTheme();
+            checkAutoResetDay();
             setTodayDate();
-            
-            // Intenta autenticación inyectada (Canvas) o anónima (GitHub)
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (error) {
-                console.error("Error de autenticación:", error);
-                // Si falla Auth, es probable que la config esté mal o el dominio no autorizado
-                alert("Error de conexión con Firebase. Verifica que tu dominio esté autorizado en Firebase Console -> Authentication -> Settings -> Authorized Domains");
-            }
-
+            await signInAnonymously(auth);
             onAuthStateChanged(auth, (user) => {
-                if (user) {
+                if(user) {
                     currentUser = user;
-                    updateConnectionStatus(true);
-                    subscribeToData();
+                    updateConnection(true);
+                    subscribeToBranch(currentBranch);
                 } else {
-                    currentUser = null;
-                    updateConnectionStatus(false);
+                    updateConnection(false);
                 }
             });
+            window.addEventListener('online', () => document.getElementById('offlineIndicator').classList.add('hidden'));
+            window.addEventListener('offline', () => document.getElementById('offlineIndicator').classList.remove('hidden'));
         }
 
-        function updateConnectionStatus(isConnected) {
-            const statusDot = document.getElementById('connectionStatus');
-            if (isConnected) {
-                statusDot.classList.remove('bg-red-500', 'animate-pulse');
-                statusDot.classList.add('bg-lime-400');
+        window.toggleBranch = function() {
+            currentBranch = currentBranch === 'centro' ? 'ejemplares' : 'centro';
+            localStorage.setItem('tao_branch', currentBranch);
+            applyBranchTheme();
+            subscribeToBranch(currentBranch);
+        }
+
+        function applyBranchTheme() {
+            const body = document.getElementById('appBody');
+            const header = document.getElementById('mainHeader');
+            const name = document.getElementById('branchName');
+            
+            if(currentBranch === 'centro') {
+                body.classList.remove('theme-ejemplares'); body.classList.add('theme-centro');
+                header.style.backgroundColor = '#064e3b'; name.textContent = 'Centro Tao';
             } else {
-                statusDot.classList.remove('bg-lime-400');
-                statusDot.classList.add('bg-red-500', 'animate-pulse');
+                body.classList.remove('theme-centro'); body.classList.add('theme-ejemplares');
+                header.style.backgroundColor = '#312e81'; name.textContent = 'Ejemplares Tao';
             }
         }
 
-        // --- REALTIME DATA ---
-        function subscribeToData() {
-            // Colección PÚBLICA por simplicidad. 
-            // Si cambias tu appId, cambiará la "sala" de datos.
-            const collectionPath = ['artifacts', appId, 'public', 'data'];
-
-            // 1. Tareas
-            onSnapshot(collection(db, ...collectionPath, 'jardin_tasks'), (snapshot) => {
-                const tasks = [];
-                snapshot.forEach((doc) => tasks.push({ id: doc.id, ...doc.data() }));
-                tasks.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-                tasksState = tasks;
-                if(currentView === 'tasks') renderTasks();
-                updateProgress();
-            }, (error) => {
-                console.error("Error tareas:", error);
-                // Error común: Faltan reglas de seguridad o índices
-                if(error.code === 'permission-denied') alert("Error de permisos: Asegúrate de que las reglas de Firestore permitan lectura/escritura pública o autenticada.");
-            });
-
-            // 2. Notas
-            onSnapshot(collection(db, ...collectionPath, 'jardin_notes'), (snapshot) => {
-                const notes = [];
-                snapshot.forEach((doc) => notes.push({ id: doc.id, ...doc.data() }));
-                notes.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-                notesState = notes;
-                if(currentView === 'notes') renderNotes();
-            });
-        }
-
-        // --- VISTAS Y LOGICA ---
-        window.switchView = function(viewName) {
-            currentView = viewName;
-            const tabTasks = document.getElementById('tab-tasks');
-            const tabNotes = document.getElementById('tab-notes');
-            const viewTasks = document.getElementById('tasksView');
-            const viewNotes = document.getElementById('notesView');
-            const resetBtn = document.getElementById('resetBtn');
-            const progressContainer = document.getElementById('progressBarContainer');
-            const progressText = document.getElementById('progressContainer');
-
-            if (viewName === 'tasks') {
-                tabTasks.className = "flex-1 pb-3 text-center tab-active transition-all";
-                tabNotes.className = "flex-1 pb-3 text-center tab-inactive transition-all";
-                viewTasks.classList.remove('hidden');
-                viewNotes.classList.add('hidden');
-                resetBtn.classList.remove('hidden'); 
-                progressContainer.classList.remove('hidden');
-                progressText.style.opacity = '1';
-                renderTasks();
-            } else {
-                tabTasks.className = "flex-1 pb-3 text-center tab-inactive transition-all";
-                tabNotes.className = "flex-1 pb-3 text-center tab-active transition-all";
-                viewTasks.classList.add('hidden');
-                viewNotes.classList.remove('hidden');
-                resetBtn.classList.add('hidden'); 
-                progressContainer.classList.add('hidden');
-                progressText.style.opacity = '0';
-                renderNotes();
-            }
-        }
-
-        window.handleMainAction = function() {
-            if (currentView === 'tasks') {
-                document.getElementById('addTaskModal').classList.remove('hidden');
-                setTimeout(() => document.getElementById('newTaskInput').focus(), 100);
-                selectPriority('low');
-            } else {
-                document.getElementById('addNoteModal').classList.remove('hidden');
-                setTimeout(() => document.getElementById('newNoteInput').focus(), 100);
-            }
-        }
-
-        window.closeModal = function(modalId) {
-            document.getElementById(modalId).classList.add('hidden');
-            if(modalId === 'addTaskModal') document.getElementById('newTaskInput').value = '';
-            if(modalId === 'addNoteModal') document.getElementById('newNoteInput').value = '';
-        }
-
-        // CRUD TAREAS
-        window.addNewTask = async function() {
-            const input = document.getElementById('newTaskInput');
-            const btn = document.getElementById('saveTaskBtn');
-            const text = input.value.trim();
-            if (!text) return;
-            btn.disabled = true;
-            try {
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'jardin_tasks'), {
-                    text: text,
-                    priority: selectedPriority,
-                    checkedDay: false,
-                    checkedTotal: false,
-                    createdAt: serverTimestamp()
+        function subscribeToBranch(branch) {
+            if(unsubTasks) unsubTasks(); if(unsubDeliveries) unsubDeliveries(); if(unsubNotes) unsubNotes(); if(unsubChat) unsubChat();
+            const basePath = ['artifacts', APP_ID, branch];
+            
+            // Tareas
+            unsubTasks = onSnapshot(query(collection(db, ...basePath, 'tasks'), orderBy('createdAt', 'desc')), (snap) => {
+                const list = document.getElementById('taskListContainer'); list.innerHTML = '';
+                if(snap.empty) { list.innerHTML = `<div class="text-center p-8 opacity-40"><i class="fas fa-check-circle text-4xl mb-2"></i><br>Sin tareas pendientes</div>`; return; }
+                snap.forEach(doc => {
+                    const t = doc.data(); const styles = getPriorityStyles(t.priority);
+                    const el = document.createElement('div');
+                    el.className = `bg-white rounded-xl shadow-sm border-l-4 ${styles.border} overflow-hidden transition-all ${t.checkedTotal ? 'opacity-60' : ''}`;
+                    el.innerHTML = `
+                        <div class="p-3 flex gap-3"><div class="flex-grow"><div class="flex justify-between items-start"><span class="text-[10px] font-bold px-2 rounded bg-stone-100 uppercase text-stone-500">${styles.label}</span>${t.isCyclic ? '<span class="cyclic-badge"><i class="fas fa-sync-alt"></i> CICLO</span>' : ''}</div><h3 class="text-base font-medium mt-1 leading-snug ${t.checkedTotal ? 'completed-text' : 'text-stone-800'}">${t.text}</h3>${t.assignee ? `<p class="text-xs text-stone-500 mt-1"><i class="fas fa-user-circle"></i> ${t.assignee}</p>` : ''}</div><div class="flex flex-col gap-2 justify-center border-l pl-2 border-stone-100">${!t.isCyclic ? `<button onclick="deleteDocItem('tasks','${doc.id}')" class="text-stone-300 hover:text-red-500 p-1"><i class="fas fa-trash"></i></button>` : ''}<button onclick="toggleDay('${doc.id}', ${t.checkedDay})" class="w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors ${t.checkedDay ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-stone-300 text-transparent'}"><i class="fas fa-check text-xs"></i></button></div></div>`;
+                    list.appendChild(el);
                 });
-                closeModal('addTaskModal');
-            } catch (e) { console.error(e); alert("Error al guardar: " + e.message); }
-            btn.disabled = false;
-        }
-
-        window.toggleDay = async function(id) {
-            const task = tasksState.find(t => t.id === id);
-            if(!task) return;
-            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'jardin_tasks', id), { checkedDay: !task.checkedDay });
-        }
-
-        window.toggleTotal = async function(id) {
-            const task = tasksState.find(t => t.id === id);
-            if(!task) return;
-            const newVal = !task.checkedTotal;
-            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'jardin_tasks', id), { checkedTotal: newVal, checkedDay: newVal ? true : task.checkedDay });
-        }
-
-        window.deleteTask = async function(id) {
-            if(confirm("¿Eliminar tarea?")) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'jardin_tasks', id));
-        }
-
-        window.resetDay = async function() {
-            if(!confirm("¿Iniciar nuevo día?")) return;
-            const batch = [];
-            tasksState.forEach(t => {
-                if(t.checkedDay && !t.checkedTotal) {
-                    batch.push(updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'jardin_tasks', t.id), { checkedDay: false }));
-                }
             });
-            await Promise.all(batch);
-        }
 
-        window.cyclePriority = async function(id, currentPrio) {
-            const idx = PRIORITY_ORDER.indexOf(currentPrio);
-            const nextIdx = (idx + 1) % PRIORITY_ORDER.length;
-            try {
-                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'jardin_tasks', id), { priority: PRIORITY_ORDER[nextIdx] });
-            } catch(e) { console.error(e); }
-        }
-
-        window.selectPriority = function(prio) {
-            selectedPriority = prio;
-            document.querySelectorAll('.priority-btn').forEach(btn => {
-                btn.classList.remove('ring-2', 'ring-emerald-500', 'ring-offset-1');
-                btn.style.opacity = '0.6';
+            // Repartos
+            unsubDeliveries = onSnapshot(query(collection(db, ...basePath, 'deliveries'), orderBy('createdAt', 'desc')), (snap) => {
+                const list = document.getElementById('deliveryListContainer'); list.innerHTML = '';
+                if(snap.empty) { list.innerHTML = `<div class="text-center p-8 opacity-40"><i class="fas fa-truck text-4xl mb-2"></i><br>Sin repartos</div>`; return; }
+                snap.forEach(doc => {
+                    const d = doc.data(); const isDone = d.status === 'delivered';
+                    const el = document.createElement('div');
+                    el.className = `bg-white rounded-xl shadow-sm border border-stone-200 p-4 relative ${isDone ? 'opacity-60 bg-stone-50' : ''}`;
+                    el.innerHTML = `<div class="flex justify-between items-start mb-2"><div><h3 class="font-bold text-stone-800 text-lg">${d.client}</h3><a href="tel:${d.phone}" class="text-emerald-600 text-sm font-bold flex items-center gap-1"><i class="fas fa-phone-alt"></i> ${d.phone}</a></div><button onclick="toggleDelivery('${doc.id}', '${d.status}')" class="px-3 py-1 rounded-full text-xs font-bold ${isDone ? 'bg-emerald-100 text-emerald-700' : 'bg-stone-100 text-stone-500'}">${isDone ? 'ENTREGADO' : 'PENDIENTE'}</button></div><div class="bg-stone-50 p-2 rounded text-sm text-stone-700 mb-3 italic">"${d.items}"</div><div class="flex justify-between items-end text-xs text-stone-500 border-t pt-2"><div><p><i class="far fa-clock"></i> ${d.when}</p><a href="https://maps.google.com/?q=${d.where}" target="_blank" class="text-blue-600 underline mt-1 block"><i class="fas fa-map-marker-alt"></i> ${d.where}</a></div><button onclick="deleteDocItem('deliveries','${doc.id}')" class="text-stone-300 hover:text-red-500"><i class="fas fa-trash"></i></button></div>`;
+                    list.appendChild(el);
+                });
             });
-            const activeBtn = document.getElementById(`btn-${prio}`);
-            activeBtn.classList.add('ring-2', 'ring-emerald-500', 'ring-offset-1');
-            activeBtn.style.opacity = '1';
+
+            // Notas (ACTUALIZADO CON TIPOS)
+            unsubNotes = onSnapshot(query(collection(db, ...basePath, 'notes'), orderBy('createdAt', 'desc')), (snap) => {
+                const list = document.getElementById('notesListContainer'); list.innerHTML = '';
+                snap.forEach(doc => {
+                    const n = doc.data();
+                    const noteType = n.type || 'internal'; // Por defecto internal si no existe
+                    const themeClass = noteType === 'billing' ? 'note-billing' : 'note-internal';
+                    
+                    const el = document.createElement('div');
+                    el.className = `p-4 rounded-xl shadow-sm border relative ${themeClass}`;
+                    el.innerHTML = `
+                        ${noteType === 'billing' ? '<span class="badge-billing"><i class="fas fa-money-bill-wave"></i> COLA DE COBRO</span>' : ''}
+                        <p class="whitespace-pre-wrap text-stone-800 font-handwriting">${n.content}</p>
+                        <button onclick="deleteDocItem('notes','${doc.id}')" class="absolute top-2 right-2 text-yellow-700 hover:text-red-500 opacity-50"><i class="fas fa-times"></i></button>
+                    `;
+                    list.appendChild(el);
+                });
+            });
+
+            // Chat
+            unsubChat = onSnapshot(query(collection(db, ...basePath, 'chat'), orderBy('createdAt', 'asc'), limit(50)), (snap) => {
+                const container = document.getElementById('chatContainer');
+                snap.docChanges().forEach((change) => { if (change.type === "added") { const msg = change.doc.data(); if(msg.type === 'audio' && msg.sender !== currentUser.uid) { const now = Date.now(); const msgTime = msg.createdAt ? msg.createdAt.toMillis() : now; if (now - msgTime < 30000) playAudioAuto(msg.url); } } });
+                container.innerHTML = '<div class="text-center text-xs text-stone-400 mt-4">Frecuencia Abierta</div>';
+                snap.forEach(doc => {
+                    const msg = doc.data(); const isMe = msg.sender === currentUser.uid;
+                    const div = document.createElement('div'); div.className = `msg-bubble ${isMe ? 'msg-me' : 'msg-other'} shadow-sm`;
+                    if(msg.type === 'text') div.innerHTML = `<p class="text-sm">${msg.text}</p>`;
+                    if(msg.type === 'image') div.innerHTML = `<img src="${msg.url}" class="rounded-lg border border-stone-200">`;
+                    if(msg.type === 'audio') div.innerHTML = `<div class="flex items-center gap-2"><i class="fas fa-play-circle text-2xl opacity-50"></i> <audio controls src="${msg.url}" class="h-8 w-40"></audio></div>`;
+                    const time = msg.createdAt ? new Date(msg.createdAt.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+                    div.innerHTML += `<div class="text-[9px] text-right mt-1 opacity-40">${time}</div>`;
+                    container.appendChild(div);
+                });
+                container.scrollTop = container.scrollHeight;
+            });
         }
 
-        // CRUD NOTAS
+        function checkAutoResetDay() { const todayStr = new Date().toDateString(); const lastRun = localStorage.getItem('tao_last_run_date'); if (lastRun !== todayStr) { localStorage.setItem('tao_last_run_date', todayStr); } }
+
         window.addNewNote = async function() {
-            const input = document.getElementById('newNoteInput');
-            const btn = document.getElementById('saveNoteBtn');
-            const text = input.value.trim();
-            if (!text) return;
-            btn.disabled = true;
-            try {
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'jardin_notes'), { content: text, createdAt: serverTimestamp() });
-                closeModal('addNoteModal');
-            } catch (e) { console.error(e); alert("Error al guardar nota"); }
-            btn.disabled = false;
+            const content = document.getElementById('newNoteInput').value;
+            const type = document.getElementById('newNoteType').value;
+            if(!content) return;
+            const basePath = ['artifacts', APP_ID, currentBranch, 'notes'];
+            await addDoc(collection(db, ...basePath), { content, type, createdAt: serverTimestamp() });
+            closeModal('addNoteModal');
+            document.getElementById('newNoteInput').value = '';
         }
-
-        window.deleteNote = async function(id) {
-            if(confirm("¿Borrar nota?")) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'jardin_notes', id));
-        }
-
-        // RENDERS
-        function renderTasks() {
-            const container = document.getElementById('taskListContainer');
-            container.innerHTML = '';
-            if (tasksState.length === 0) {
-                container.innerHTML = `<div class="text-center p-8 text-stone-400"><p class="text-4xl mb-4">🌿</p><p>Sin tareas</p></div>`;
-                return;
-            }
-            tasksState.forEach(task => {
-                const styles = PRIORITY_STYLES[task.priority] || PRIORITY_STYLES['low'];
-                const isTotalDone = task.checkedTotal;
-                const isDayDone = task.checkedDay;
-                const idStr = `'${task.id}'`;
-                const prioStr = `'${task.priority}'`;
-
-                const card = document.createElement('div');
-                card.className = `item-enter bg-white rounded-xl shadow-sm mb-4 overflow-hidden border-l-8 ${styles.color} flex flex-col relative transition-all duration-300 ${isTotalDone ? 'opacity-70 grayscale-[0.5]' : ''}`;
-                card.innerHTML = `
-                    <div class="p-4 flex-grow pr-10">
-                        <div class="flex justify-between items-start mb-1">
-                            <button onclick="cyclePriority(${idStr}, ${prioStr})" class="text-[10px] font-bold px-2 py-1 rounded bg-stone-100 ${styles.text} uppercase tracking-wider border border-transparent hover:border-stone-300 active:scale-95 transition-all flex items-center gap-1">
-                                ${styles.label} <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-                            </button>
-                        </div>
-                        <h3 class="text-lg font-medium leading-tight mt-1 ${isTotalDone ? 'completed-text' : 'text-stone-800'}">
-                            ${task.text}
-                        </h3>
-                    </div>
-                    <button onclick="deleteTask(${idStr})" class="absolute top-2 right-2 p-2 text-stone-300 hover:text-red-500 z-10"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button>
-                    <div class="grid grid-cols-2 border-t border-stone-100 divide-x divide-stone-100 h-14">
-                        <button onclick="toggleDay(${idStr})" class="flex flex-col items-center justify-center active:bg-stone-100 ${isDayDone ? 'bg-emerald-50' : 'bg-white'}">
-                             <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center mb-0.5 ${isDayDone ? 'border-emerald-500 bg-emerald-500' : 'border-stone-300'}">${isDayDone ? '<svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"></path></svg>' : ''}</div>
-                            <span class="text-[10px] font-bold ${isDayDone ? 'text-emerald-700' : 'text-stone-400'}">HOY</span>
-                        </button>
-                        <button onclick="toggleTotal(${idStr})" class="flex flex-col items-center justify-center active:bg-stone-100 ${isTotalDone ? 'bg-stone-800' : 'bg-white'}">
-                            <div class="w-5 h-5 rounded border-2 flex items-center justify-center mb-0.5 ${isTotalDone ? 'border-stone-600 bg-stone-600' : 'border-stone-300'}">${isTotalDone ? '<svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"></path></svg>' : ''}</div>
-                            <span class="text-[10px] font-bold ${isTotalDone ? 'text-white' : 'text-stone-400'}">LISTO</span>
-                        </button>
-                    </div>`;
-                container.appendChild(card);
-            });
-        }
-
-        function renderNotes() {
-            const container = document.getElementById('notesListContainer');
-            container.innerHTML = '';
-            if (notesState.length === 0) {
-                container.innerHTML = `<div class="text-center p-8 text-stone-400"><p class="text-4xl mb-4">📝</p><p>Sin anotaciones</p></div>`;
-                return;
-            }
-            notesState.forEach(note => {
-                const idStr = `'${note.id}'`;
-                let dateStr = note.createdAt ? new Date(note.createdAt.seconds * 1000).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : "";
-                const card = document.createElement('div');
-                card.className = `item-enter bg-yellow-50 rounded-xl shadow-sm border border-yellow-200 p-4 relative`;
-                card.innerHTML = `
-                    <div class="text-stone-800 whitespace-pre-wrap leading-relaxed mb-4 font-handwriting note-paper">${note.content}</div>
-                    <div class="flex justify-between items-end border-t border-yellow-200 pt-2">
-                        <span class="text-xs text-yellow-700 font-medium">${dateStr}</span>
-                        <button onclick="deleteNote(${idStr})" class="text-yellow-600 hover:text-red-500 p-1"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
-                    </div>`;
-                container.appendChild(card);
-            });
-        }
-
-        function updateProgress() {
-            if (tasksState.length === 0) {
-                document.getElementById('progressBar').style.width = `0%`;
-                document.getElementById('progressText').textContent = `0%`;
-                return;
-            }
-            const completed = tasksState.filter(t => t.checkedTotal).length;
-            const percentage = Math.round((completed / tasksState.length) * 100);
-            document.getElementById('progressBar').style.width = `${percentage}%`;
-            document.getElementById('progressText').textContent = `${percentage}%`;
-        }
-
-        function setTodayDate() {
-            try {
-                const today = new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
-                document.getElementById('currentDate').textContent = today.charAt(0).toUpperCase() + today.slice(1);
-            } catch (e) {}
-        }
+        
+        // ... (RESTO DE FUNCIONES CRUD IGUALES A v5.5) ...
+        window.addNewDelivery = async function() { const client = document.getElementById('delClient').value; const phone = document.getElementById('delPhone').value; const items = document.getElementById('delItems').value; const when = document.getElementById('delWhen').value; const where = document.getElementById('delWhere').value; if(!client || !items) return alert("Faltan datos"); const basePath = ['artifacts', APP_ID, currentBranch, 'deliveries']; await addDoc(collection(db, ...basePath), { client, phone, items, when, where, status: 'pending', createdAt: serverTimestamp() }); closeModal('addDeliveryModal'); document.getElementById('delClient').value = ''; document.getElementById('delPhone').value = ''; document.getElementById('delItems').value = ''; document.getElementById('delWhen').value = ''; document.getElementById('delWhere').value = ''; }
+        window.toggleDelivery = async function(id, currentStatus) { const newStatus = currentStatus === 'pending' ? 'delivered' : 'pending'; const basePath = ['artifacts', APP_ID, currentBranch, 'deliveries']; await updateDoc(doc(db, ...basePath, id), { status: newStatus }); }
+        window.addNewTask = async function() { const text = document.getElementById('newTaskInput').value.trim(); const assignee = document.getElementById('newTaskAssignee').value.trim(); const isCyclic = document.getElementById('newTaskCyclic').checked; if(!text) return; const basePath = ['artifacts', APP_ID, currentBranch, 'tasks']; await addDoc(collection(db, ...basePath), { text, assignee, priority: selectedPriority, isCyclic, checkedDay: false, checkedTotal: false, createdAt: serverTimestamp() }); closeModal('addTaskModal'); document.getElementById('newTaskInput').value = ''; }
+        window.toggleDay = async function(id, currentVal) { const basePath = ['artifacts', APP_ID, currentBranch, 'tasks']; await updateDoc(doc(db, ...basePath, id), { checkedDay: !currentVal }); }
+        window.deleteDocItem = async function(coll, id) { if(confirm("¿Eliminar?")) { const basePath = ['artifacts', APP_ID, currentBranch, coll]; await deleteDoc(doc(db, ...basePath, id)); } }
+        window.startRecording = async function(e) { if(e) e.preventDefault(); if(isRecording) return; try { const stream = await navigator.mediaDevices.getUserMedia({ audio: true }); mediaRecorder = new MediaRecorder(stream); audioChunks = []; mediaRecorder.ondataavailable = event => audioChunks.push(event.data); mediaRecorder.onstop = async () => { const audioBlob = new Blob(audioChunks, { type: 'audio/mp4' }); uploadAudio(audioBlob); }; mediaRecorder.start(); isRecording = true; document.getElementById('recordingStatus').style.opacity = '1'; } catch (err) { alert("Mic Error: " + err.message); } }
+        window.stopRecording = function(e) { if(e) e.preventDefault(); if(!isRecording) return; mediaRecorder.stop(); isRecording = false; document.getElementById('recordingStatus').style.opacity = '0'; }
+        async function uploadAudio(blob) { const fileName = `audios/${Date.now()}.mp4`; const storageRef = ref(storage, fileName); const snap = await uploadBytes(storageRef, blob); const url = await getDownloadURL(snap.ref); const basePath = ['artifacts', APP_ID, currentBranch, 'chat']; await addDoc(collection(db, ...basePath), { type: 'audio', url, sender: currentUser.uid, createdAt: serverTimestamp() }); }
+        window.sendTextMessage = async function() { const input = document.getElementById('chatInput'); const text = input.value.trim(); if(!text) return; const basePath = ['artifacts', APP_ID, currentBranch, 'chat']; await addDoc(collection(db, ...basePath), { type: 'text', text, sender: currentUser.uid, createdAt: serverTimestamp() }); input.value = ''; }
+        window.uploadImage = async function() { const file = document.getElementById('imageInput').files[0]; if(!file) return; const fileName = `images/${Date.now()}_${file.name}`; const storageRef = ref(storage, fileName); const snap = await uploadBytes(storageRef, file); const url = await getDownloadURL(snap.ref); const basePath = ['artifacts', APP_ID, currentBranch, 'chat']; await addDoc(collection(db, ...basePath), { type: 'image', url, sender: currentUser.uid, createdAt: serverTimestamp() }); }
+        function playAudioAuto(url) { const audio = new Audio(url); audio.play().catch(e => console.log("Auto-play bloqueado")); }
+        window.toggleWakeLock = async function() { if ('wakeLock' in navigator) { try { if(wakeLock) { wakeLock.release(); wakeLock = null; document.getElementById('wakeLockBtn').classList.remove('bg-white/20'); alert("Pantalla desbloqueada"); } else { wakeLock = await navigator.wakeLock.request('screen'); document.getElementById('wakeLockBtn').classList.add('bg-white/20'); alert("Pantalla Activa"); } } catch (err) { alert("Error: " + err.name); } } else alert("Navegador no soporta Wake Lock"); }
+        window.switchView = function(view) { currentView = view; document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden')); document.getElementById(view + 'View').classList.remove('hidden'); ['tasks','notes','stock','chat','delivery'].forEach(v => { document.getElementById('tab-'+v).className = v===view ? "flex-1 pb-3 text-center tab-active min-w-[60px]" : "flex-1 pb-3 text-center tab-inactive min-w-[60px]"; }); const controls = document.getElementById('mainControls'); if(view === 'chat' || view === 'stock') controls.classList.add('hidden'); else { controls.classList.remove('hidden'); const btnText = document.getElementById('mainBtnText'); if(view === 'delivery') btnText.innerText = 'Reparto'; else if(view === 'notes') btnText.innerText = 'Nota'; else btnText.innerText = 'Tarea'; } }
+        window.handleMainAction = function() { if(currentView === 'notes') { document.getElementById('addNoteModal').classList.remove('hidden'); document.getElementById('newNoteInput').focus(); } else if (currentView === 'tasks') { document.getElementById('addTaskModal').classList.remove('hidden'); document.getElementById('newTaskInput').focus(); } else if (currentView === 'delivery') { document.getElementById('addDeliveryModal').classList.remove('hidden'); document.getElementById('delClient').focus(); } }
+        window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
+        window.selectPriority = (p) => { selectedPriority = p; document.querySelectorAll('.prio-btn').forEach(b => b.classList.remove('ring-2','ring-emerald-500')); document.getElementById('btn-'+p).classList.add('ring-2','ring-emerald-500'); };
+        function getPriorityStyles(p) { const map = { critical: { border: "border-red-500", label: "Urgente" }, high: { border: "border-orange-500", label: "Alta" }, medium: { border: "border-blue-500", label: "Media" }, low: { border: "border-emerald-500", label: "Baja" } }; return map[p] || map.low; }
+        function setTodayDate() { try { const d = new Date(); document.getElementById('currentDate').innerText = d.toLocaleDateString('es-ES', {weekday:'short', day:'numeric'}); } catch(e){} }
+        function updateConnection(status) { document.getElementById('connectionStatus').className = `w-2 h-2 rounded-full ${status?'bg-lime-400':'bg-red-500 animate-pulse'}`; }
 
         initApp();
     </script>
